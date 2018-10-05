@@ -27,9 +27,9 @@ const double OUTER_ZOOM = 60.0; // preset quick zoom value for outer planets
 const double ZOOM_INCR = 1.0;	// how much fast the camera zooms in or out
 const double MAX_ZOOM = 80.0;  	// the furthest possible camera zoom
 // preset speeds for quick speed menu
-const double SLOW = 0.1;
-const double NORMAL = 0.5;
-const double FAST = 1.5;
+const double SLOW = 0.05;
+const double NORMAL = 0.25;
+const double FAST = 1.0;
 
 const double SPEED_INCR = 0.01;	// how fast the user can adjust the orbital speed
 const double MAX_SPEED = 3.0;	// the fastest possible orbital speed
@@ -46,7 +46,7 @@ double angle = 0.0;
 double position = 0.0;
 double zoom = 30.0;                     // how far the camera is (initially)
 double camPos[] = {5.0, 10.0, zoom};	// where the camera is
-double speed = 0.5;                    	// how fast planets rotate with user input
+double speed = 0.25;                    // how fast planets rotate with user input
 
 void keyboard(unsigned char key, int xIn, int yIn)
 {
@@ -57,19 +57,21 @@ void keyboard(unsigned char key, int xIn, int yIn)
 			exit(0);
 			break;
 
-		case 'a':				// rotate counterclockwise if user press 'a'
+        // rotations are now automatic
+
+		/*case 'a':				// rotate counterclockwise if user press 'a'
             angle += speed;
             break;
 
-        case 'd':				// rotate clockwise if user press 'a'
+        case 'd':				// rotate clockwise if user press 'd'
             angle -= speed;
-            break;
-			
+            break;*/
+
 		case 'w':				// zoom in if possible
 			if (zoom > 0) {
 				zoom -= ZOOM_INCR;
 				gluLookAt(camPos[0], camPos[1], zoom, 0, 0, 0, 0, 1 ,0);
-				printf("ZOOMING IN! NEW ZOOM (initial is 30): %f\n", zoom);
+				printf("NEW ZOOM: %f\n", zoom);
 			}
 			break;
 
@@ -77,24 +79,24 @@ void keyboard(unsigned char key, int xIn, int yIn)
 			if (zoom < MAX_ZOOM) {
 				zoom += ZOOM_INCR;
 				gluLookAt(camPos[0], camPos[1], zoom, 0, 0, 0, 0, 1, 0);
-				printf("ZOOMING OUT! NEW ZOOM (initial is 30): %f\n", zoom);
-			}
-			break;
-			
-		case 'z':				// slow down orbital speed if possible
-			if (speed > 0) {
-				speed -= SPEED_INCR;
-				printf("DECREASING ORBITAL SPEED! NEW ORBITAL SPEED (normal is 0.5): %f\n", speed);
+				printf("NEW ZOOM: %f\n", zoom);
 			}
 			break;
 
-		case 'c':				// zoom out if below fastest possible orbital speed
-			if (speed < MAX_SPEED) {
-				speed += SPEED_INCR;
-				printf("INCREASING ORBITAL SPEED! NEW ORBITAL SPEED (normal is 0.5): %f\n", speed);
+		case 'a':				// slow down orbital speed if possible
+			if (speed > 0) {
+				speed -= SPEED_INCR;
+				printf("NEW ORBITAL SPEED: %f\n", speed);
 			}
 			break;
-	
+
+		case 'd':				// zoom out if below fastest possible orbital speed
+			if (speed < MAX_SPEED) {
+				speed += SPEED_INCR;
+				printf("NEW ORBITAL SPEED: %f\n", speed);
+			}
+			break;
+
 	}
 }
 
@@ -115,6 +117,8 @@ void display(void)
 	glLoadIdentity();
 	gluLookAt(camPos[0], camPos[1], zoom, 0, 0, 0, 0, 1, 0);
 
+	angle+= speed;        // autorotate
+
 	// --- THE SUN ---
     glPushMatrix();
         glRotated(angle, 0, 1, 0);
@@ -134,7 +138,7 @@ void display(void)
 			glutSolidSphere(1.0, 40, 40);
         glPopMatrix();
     }
-	
+
 	// --- PLUTO ---	(NEED TO MAKE ORBIT ELLIPTICAL)
 	glPushMatrix();
 		glRotated(angle * data[8][2], 0, 1, 0);
@@ -144,7 +148,7 @@ void display(void)
 		glColor3dv(colours[8]);
 		glutSolidSphere(1.0, 40, 40);
     glPopMatrix();
-	
+
 	// --- ASTEROID BELT ---
 	for (int i = 0; i < AST_BELT_DENSITY; i++) {
 		for (int j = 0; j < AST_BELT_NUM_LAYERS; j++) {
@@ -158,7 +162,6 @@ void display(void)
 			glPopMatrix();
 		}
     }
-	
 
 	glutSwapBuffers();
 }
@@ -195,12 +198,15 @@ void zoomMenuProc(int value){
 
 void speedMenuProc(int value){
     if (value == 1) {
+        speed = 0.0;
+		printf("FREEZING! NEW ORBITAL SPEED: %f\n", speed);
+    } else if (value == 2) {
         speed = SLOW;
 		printf("SLOWING DOWN! NEW ORBITAL SPEED: %f\n", speed);
-    } else if (value == 2) {
+    } else if (value == 3) {
         speed = NORMAL;
 		printf("RESETING SPEED! NEW ORBITAL SPEED: %f\n", speed);
-    } else if (value == 3) {
+    } else if (value == 4) {
         speed = FAST;
 		printf("SPEEDING UP! NEW ORBITAL SPEED: %f\n", speed);
     }
@@ -210,11 +216,12 @@ void createOurMenu(){
 	int zoomMenu_id = glutCreateMenu(zoomMenuProc);
 	glutAddMenuEntry("Inner Planets", 1);
 	glutAddMenuEntry("Outer Planets", 2);
-	
+
 	int speedMenu_id = glutCreateMenu(speedMenuProc);
-	glutAddMenuEntry("Slow", 1);
-	glutAddMenuEntry("Normal", 2);
-	glutAddMenuEntry("Fast", 3);
+	glutAddMenuEntry("Freeze", 1);
+	glutAddMenuEntry("Slow", 2);
+	glutAddMenuEntry("Normal", 3);
+	glutAddMenuEntry("Fast", 4);
 
 	int main_id = glutCreateMenu(mainMenuProc);
 	glutAddSubMenu("Quick Zoom", zoomMenu_id);
