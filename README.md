@@ -1,7 +1,7 @@
 # Simple-Solar-System
 A simple, mostly to scale model of our solar system done in C++ using OpenGL. A better version will be uploaded soon with focus on improving the UI and visual appeal.
 
-Click the window to begin. Start orbiting the planets by holding 'a' or 'd'. Zooming in and out are possible by holding 'w' or 's' keys respectively. Speed up or slow down the orbital speeds by holding 'z' or 'c' respectively. Right click to bring up the quick zoom and quick speed menus. You can also quit the program by pressing q.
+Click the window to begin. Zoom in and out by holding 'w' or 's' keys respectively. Speed up or slow down the orbital speeds by holding 'a' or 'd' respectively. Right click to bring up the quick zoom and quick speed menus. You can also quit the program by pressing q.
 
 --- CHANGES ---
 
@@ -14,3 +14,5 @@ Click the window to begin. Start orbiting the planets by holding 'a' or 'd'. Zoo
 4) Added Pluto! Not technically a planet but it was when I was watching Magic School Bus and that was the inspiration for this project in the first place so it would be criminal to not include it. Currently working on making the orbit elliptical.
 
 5) Removed useless code, added useful comments.
+
+6) Planets now auto orbit around the sun. It was trivial to implement (one line) and much better than manual orbiting even though "rewinding" is no longer possible with auto orbiting.
