@@ -3,41 +3,71 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/freeglut.h>
+#include <random>
 
 double data[8][3];      // array containing all planetary data except colours
-double colours[8][3] = {{0.9, 0.6, 0.3}, {0.9, 0.9, 0.2}, {0.1, 1.0, 0.4}, {1.0, 0.0, 0.0},
-    {1.0, 0.3, 0.1}, {0.9, 0.9, 0.5}, {0.2, 0.2, 1.0}, {0.0, 0.0, 0.6}};   // array containing all planetary colour arrays
+double colours[8][3] = {{0.9, 0.6, 0.4}, {0.9, 0.9, 0.2}, {0.1, 1.0, 0.4}, {1.0, 0.0, 0.0},
+    {0.6, 0.3, 0.1}, {0.9, 0.9, 0.5}, {0.2, 0.5, 1.0}, {0.0, 0.0, 0.6}};   // array containing all planetary colour arrays
 
-const double DIST_MULT = 1.0;   // scaling factor to adjust for camera
+const double DIST_MULT = 0.75;   // scaling factor to adjust for camera
 const double SIZE_MULT = 0.1;   // scaling factor to adjust size of drawn planets
-const double SUN_SIZE = 0.2;    // size of sun (NOT TO SCALE)
+const double SUN_SIZE = 0.15;    // size of sun (NOT TO SCALE)
 const double SUN_COLOUR[3] = {1.0, 1.0, 0.1};   // colour of sun (default yellow)
+const double AST_BELT_DIST = 2.3;	// distance of closest layer of asteroid belt from sun relative to earth
+const double AST_BELT_OFFSET = 0.05;	// offset distance for layers of asteroid belt
+const int AST_BELT_NUM_LAYERS = 10;	// number of layers of asteroid belt
+const int AST_BELT_DENSITY = 30;	// number of asteroids per layer
+const double AST_SIZE = 0.1;		// radii of asteroids
+const double AST_ORBITAL_VEL = 19.0;	// asteroid orbital velocity (random interpolation guess)
+const double AST_COLOUR[3] = {0.5, 0.5, 0.5};	// colour of asteroids
 const double INNER_ZOOM = 0.0;  // preset quick zoom value for inner planets
-const double OUTER_ZOOM = 68.0; // preset quick zoom value for outer planets
-const double MAX_ZOOM = 100.0;  // the furthest possible camera zoom
+const double OUTER_ZOOM = 70.0; // preset quick zoom value for outer planets
+const double MAX_ZOOM = 70.0;  // the furthest possible camera zoom
+// window size and initial position
+const int MAX_X = 800;
+const int MAX_Y = 800;
+const int WINDOW_POS_X = 400;
+const int WINDOW_POS_Y = 200;
 
 double angle = 0.0;
 double position = 0.0;
 double zoom = 30.0;                     // how far the camera is (initially)
 double camPos[] = {5.0, 10.0, zoom};	// where the camera is
-double speed = 0.25;                    // how fast planets rotate with user input
+double speed = 0.5;                    	// how fast planets rotate with user input
 
 void keyboard(unsigned char key, int xIn, int yIn)
 {
 	int mod = glutGetModifiers();
 	switch (key)
 	{
-		case 'q':
+		case 'q':				// quit if user presses 'q'
 			exit(0);
 			break;
 
-		case 'a':
+		case 'a':				// rotate counterclockwise if user press 'a'
             angle += speed;
             break;
 
-        case 'd':
+        case 'd':				// rotate clockwise if user press 'a'
             angle -= speed;
             break;
+			
+		case 'w':				// zoom in if possible
+			if (zoom > 0) {
+				zoom--;
+				gluLookAt(camPos[0], camPos[1], zoom, 0, 0, 0, 0, 1 ,0);
+				printf("ZOOMING IN: %f\n", zoom);
+			}
+			break;
+
+		case 's':				// zoom out if below furthest possible camera zoom
+			if (zoom < MAX_ZOOM) {
+				zoom++;
+				gluLookAt(camPos[0], camPos[1], zoom, 0, 0, 0, 0, 1, 0);
+				printf("ZOOMING OUT: %f\n", zoom);
+			}
+			break;
+	
 	}
 }
 
@@ -63,79 +93,57 @@ void display(void)
         glRotated(angle, 0, 1, 0);
         glScaled(SUN_SIZE, SUN_SIZE, SUN_SIZE);
         glColor3dv(SUN_COLOUR);
-        glutSolidSphere(1.0, 20, 20);
+        glutSolidSphere(1.0, 40, 40);
     glPopMatrix();
 
     // --- THE PLANETS ---
-    for (int i = 0; i < 8; i++) {
+    for (int i = 7; i >= 0; i--) {
         glPushMatrix();
-        glRotated(angle * data[i][2], 0, 1, 0);
-        glTranslated(data[i][1] * DIST_MULT, 0, 0);
-        glScaled(data[i][0] * SIZE_MULT, data[i][0] * SIZE_MULT, data[i][0] * SIZE_MULT);
-        glRotated(angle, 0, 1, 0);
-        glColor3dv(colours[i]);
-        glutSolidSphere(1.0, 20, 20);
+			glRotated(angle * data[i][2], 0, 1, 0);
+			glTranslated(data[i][1] * DIST_MULT, 0, 0);
+			glScaled(data[i][0] * SIZE_MULT, data[i][0] * SIZE_MULT, data[i][0] * SIZE_MULT);
+			glRotated(angle, 0, 1, 0);
+			glColor3dv(colours[i]);
+			glutSolidSphere(1.0, 40, 40);
         glPopMatrix();
     }
+	
+	// --- ASTEROID BELT ---
+	for (int i = 0; i < AST_BELT_DENSITY; i++) {
+		for (int j = 0; j < AST_BELT_NUM_LAYERS; j++) {
+			glPushMatrix();
+				glRotated(angle * AST_ORBITAL_VEL + (360.0 * (i + double(rand())/double(RAND_MAX)))/AST_BELT_DENSITY, 0, 1, 0);
+				glTranslated((AST_BELT_DIST + j * AST_BELT_OFFSET) * DIST_MULT, 0, 0);
+				glScaled(AST_SIZE * SIZE_MULT, AST_SIZE * SIZE_MULT, AST_SIZE * SIZE_MULT);
+				glRotated(angle, 0, 1, 0);
+				glColor3dv(AST_COLOUR);
+				glutSolidSphere(1.0, 40, 40);
+			glPopMatrix();
+		}
+    }
+	
 
-	//switch our buffers for a smooth animation
 	glutSwapBuffers();
 }
 
-void special(int key, int x, int y){
-	switch (key){
-	case GLUT_KEY_UP:
-	    if (zoom > 0) {
-            zoom--;
-            gluLookAt(camPos[0], camPos[1], zoom, 0, 0, 0, 0, 1 ,0);
-            printf("ZOOMING IN: %f\n", zoom);
-	    }
-		break;
-
-	case GLUT_KEY_DOWN:
-	    if (zoom < MAX_ZOOM) {
-            zoom++;
-            gluLookAt(camPos[0], camPos[1], zoom, 0, 0, 0, 0, 1, 0);
-            printf("ZOOMING OUT: %f\n", zoom);
-	    }
-		break;
-	}
-}
-
-void mouse(int btn, int state, int x, int y){
-}
-
-void reshape(int w, int h)
-{
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	//gluOrtho2D(0, w, 0, h);
-	gluPerspective(45, (double)((w+0.0f)/h), 1, 100);
-
-	glMatrixMode(GL_MODELVIEW);
-	glViewport(0, 0, w, h);
-}
+void mouse(int btn, int state, int x, int y){}
 
 void FPS(int val){
 	glutPostRedisplay();
-	glutTimerFunc(17, FPS, 0); // 1sec = 1000, 60fps = 1000/60 = ~17
+	glutTimerFunc(17, FPS, 0);
 }
 
 void callBackInit(){
-	glutDisplayFunc(display);	//registers "display" as the display callback function
+	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
-	glutSpecialFunc(special);
 	glutMouseFunc(mouse);
-	//glutReshapeFunc(reshape);
 	glutTimerFunc(0, FPS, 0);
 }
-
 
 void menuProc(int value){
 	if (value == 2) {exit(0);}
 }
 
-//could use a seperate menu processor for submenu!
 void zoomMenuProc(int value){
     if (value == 1) {
         zoom = INNER_ZOOM;
@@ -153,11 +161,10 @@ void createOurMenu(){
 
 	int main_id = glutCreateMenu(menuProc);
 	glutAddSubMenu("Quick Zoom", subMenu_id);
-	glutAddMenuEntry("Black Hole (quit)", 2);
+	glutAddMenuEntry("Black Hole", 2);			// if you don't get this joke...
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
-/* main function - program entry point */
 int main(int argc, char** argv)
 {
     // planet radii relative to Earth
@@ -190,25 +197,19 @@ int main(int argc, char** argv)
     data[6][2] = 6.8;
     data[7][2] = 5.4;
 
-    /* planet colours
-    colours[0] = {0.9, 0.6, 0.3};
-    colours[1] = {1.0, 1.0, 0.5};
-    colours[2] = {0.2, 1.0, 0.2};
-    colours[3] = {1.0, 0.0, 0.0};*/
-
-	glutInit(&argc, argv);		//starts up GLUT
+	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 
-	glutInitWindowSize(400, 400);
-	glutInitWindowPosition(250, 50);
+	glutInitWindowSize(MAX_X, MAX_Y);
+	glutInitWindowPosition(WINDOW_POS_X, WINDOW_POS_Y);
 
-	glutCreateWindow("Solar System");	//creates the window
+	glutCreateWindow("Solar System");
 
 	callBackInit();
 
 	init();
 
 	createOurMenu();
-	glutMainLoop();				//starts the event glutMainLoop
-	return(0);					//return may not be necessary on all compilers
+	glutMainLoop();
+	return 0;
 }
